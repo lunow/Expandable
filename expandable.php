@@ -2,7 +2,7 @@
 	/*
 	 *	ExpandableBehavior
 	 *	==================
-	 *	Version 1.0.1
+	 *	Version 1.0.2
 	 *
 	 *	Expands any model with unlimited fields, without changing the database.
 	 *  Creates new Keys only if debug > 2.
@@ -35,16 +35,17 @@
 	 *		paul@apeunit.com
 	 *		www.apeunit.com
 	 */
+
 	class ExpandableBehavior extends ModelBehavior {
 		var $Model;
 		var $keys;
 		var $keyStore = array();
-		var $expandAllowed = false;
 		
 		/*
 		 *	Setup up the behavior, build the associations to keys and values on the fly
 		 */
 		function setup(&$Model, $settings) {
+			//CakeLog::write('debug', 'Setup Model '.$Model->alias.' ...');
 			//one Model->alias has many values
 			$Model->bindModel(array(
 				'hasMany' => array(
@@ -54,7 +55,7 @@
 					),
 				),
 			));
-			//one value belongs to one key
+			//one value has one key
 			$Model->Value->bindModel(array(
 				'belongsTo' => array(
 					'Key' => array(
@@ -67,8 +68,6 @@
 			$this->Model = $Model;
 			//get all related keys for this Model->alias
 			$this->keys = $this->getKeys();
-			//create new keys?
-			$this->expandAllowed = Configure::read('debug') > 0 ? true : false;
 		}
 		
 		/*
@@ -120,12 +119,12 @@
 					if(isset($result['Value']) && count($result['Value']) > 0) {
 						foreach($result['Value'] as $value) {
 							//set the value from value table
-							$result[$this->Model->alias][$this->keys[$value['key_id']]] = $value['value'];
+							$result[$Model->alias][$this->keys[$value['key_id']]] = $value['value'];
 						}
 						unset($result['Value']);
-						//set empty values for all values, not found in this model
-						$result[$this->Model->alias] = Set::merge(Set::normalize($this->keys), $result[$this->Model->alias]);
 					}
+					//set empty values for all values, not found in this model
+					$result[$Model->alias] = Set::merge(Set::normalize($this->keys), $result[$Model->alias]);
 				}
 			}
 			return $results;
@@ -161,7 +160,7 @@
 		 * expand only if debug > 0
 		 */
 		function _expand($key, $value) {
-			if(!in_array($key, $this->keys) && $this->expandAllowed) {
+			if(!in_array($key, $this->keys) && Configure::read('debug') > 0) {
 				$this->_createKey($key);
 			}
 			array_push($this->keyStore, array('key' => $key, 'value' => $value));
