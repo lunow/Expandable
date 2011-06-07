@@ -2,7 +2,7 @@
 	/*
 	 *	ExpandableBehavior
 	 *	==================
-	 *	Version 1.0.2
+	 *	Version 1.0.3
 	 *
 	 *	Expands any model with unlimited fields, without changing the database.
 	 *  Creates new Keys only if debug > 2.
@@ -116,10 +116,12 @@
 		function afterFind($Model, $results, $primary) {
 			if(count($results) > 0) {
 				foreach($results as &$result) {
-					if(isset($result['Value']) && count($result['Value']) > 0) {
+					if(isset($result['Value']) && is_array($result['Value']) && count($result['Value']) > 0) {
 						foreach($result['Value'] as $value) {
 							//set the value from value table
-							$result[$Model->alias][$this->keys[$value['key_id']]] = $value['value'];
+							if(isset($this->keys[$value['key_id']])) {
+								$result[$Model->alias][$this->keys[$value['key_id']]] = $value['value'];
+							}
 						}
 						unset($result['Value']);
 					}
